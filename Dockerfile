@@ -1,18 +1,40 @@
-FROM kasmweb/brave:1.18.0
+# Use the official Fedora base image
+FROM quay.io/fedora/fedora:40
 
-EXPOSE 6901 8080
+# Install KDE Plasma, VNC server, and other necessary tools
+# 'sudo' is crucial for granting privileges
+RUN dnf install -y \
+    @kde-desktop \
+    tigervnc-server \
+    novnc \
+    supervisor \
+    sudo \
+    git \
+    && dnf clean all
 
-ENV HOME=/home/kasm-user
-ENV VNC_PW=123456
-ENV VNC_RESOLUTION=1600x1000
+# Create a non-root user 'vscode' (Codespaces default)
+RUN useradd -m -s /bin/bash vscode
 
-USER root
-RUN mkdir -p /var/lib/apt/lists/partial && apt-get update && apt-get install -y --no-install-recommends nginx && rm -rf /var/lib/apt/lists/* \
-  && mkdir -p /var/cache/nginx /var/run /var/log/nginx /var/lib/nginx /var/lib/nginx/body /var/lib/nginx/proxy /var/lib/nginx/fastcgi /var/lib/nginx/uwsgi /var/lib/nginx/scgi
-COPY nginx.conf /etc/nginx/nginx.conf
-COPY nginx-kasm.conf /etc/nginx/conf.d/default.conf
-COPY docker-entrypoint.sh /dockerstartup/docker-entrypoint.sh
-RUN chmod +x /dockerstartup/docker-entrypoint.sh
+# Give the 'vscode' user passwordless sudo access
+# This is the key to having sudo in your Codespace
+RUN echo "vscode ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/vscode
 
-WORKDIR /home/kasm-user
-ENTRYPOINT ["/dockerstartup/docker-entrypoint.sh"]
+# Set up the VNC server configuration for the 'vscode' user
+USER vscode
+RUN mkdir -p /home/vscode/.vnc
+# Set a VNC password (you can change 'password' to something else)
+RUN echo "password" | vncpasswd -f > /home/vscode/.vnc/passwd
+RUN chmod 600 /home/vscode/.vnc/passwd
+
+# Create a startup script for the VNC server
+# This script starts the VNC server and the noVNC proxy
+RUN echo '#!/bin/bash' > /home/vscode/start-vnc.sh && \
+    echo 'vncserver :1 -geometry 1920x1080 -depth 24 -localhost no' >> /home/vscode/start-vnc.sh && \
+    echo 'websockify --web /usr/share/novnc/ 6080 localhost:5901' >> /home/vscode/start-vnc.sh && \
+    chmod +x /home/vscode/start-vnc.sh
+
+# Expose the noVNC port (6080) so you can access it from your browser
+EXPOSE 6080
+
+# Set the default user
+USER vscode
