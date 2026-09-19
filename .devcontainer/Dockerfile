@@ -41,5 +41,17 @@ RUN mkdir -p /home/vscode/.config/systemd/user && \
     echo '[Install]' >> /home/vscode/.config/systemd/user/vncserver@.service && \
     echo 'WantedBy=default.target' >> /home/vscode/.config/systemd/user/vncserver@.service
 
+# Start VNC or something
+RUN echo '#!/bin/bash' > /home/vscode/start-vnc.sh && \
+    echo 'set -u' >> /home/vscode/start-vnc.sh && \
+    echo 'if ! pgrep -u "$USER" Xvnc > /dev/null; then' >> /home/vscode/start-vnc.sh && \
+    echo '  vncserver :1 -geometry 1920x1080 -depth 24 -localhost no' >> /home/vscode/start-vnc.sh && \
+    echo 'fi' >> /home/vscode/start-vnc.sh && \
+    echo 'if ! pgrep -f "websockify.*6080" > /dev/null; then' >> /home/vscode/start-vnc.sh && \
+    echo '  nohup websockify --web /usr/share/novnc/ 6080 localhost:5901 > /tmp/websockify.log 2>&1 &' >> /home/vscode/start-vnc.sh && \
+    echo '  disown' >> /home/vscode/start-vnc.sh && \
+    echo 'fi' >> /home/vscode/start-vnc.sh && \
+    chmod +x /home/vscode/start-vnc.sh
+
 EXPOSE 6080
 USER vscode

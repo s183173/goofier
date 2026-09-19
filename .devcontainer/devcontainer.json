@@ -11,5 +11,8 @@
     }
   },
   "remoteUser": "vscode",
-  "postCreateCommand": "nohup /home/vscode/start-vnc.sh > /tmp/vnc.log 2>&1 &"
+  "postCreateCommand": "chmod +x /home/vscode/start-vnc.sh",
+  "postStartCommand": "/home/vscode/start-vnc.sh",
+  "postAttachCommand": "/home/vscode/start-vnc.sh"
+
 }
