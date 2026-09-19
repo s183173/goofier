@@ -27,11 +27,19 @@ RUN echo '#!/bin/sh' > /home/vscode/.vnc/xstartup && \
     echo 'exec startplasma-x11' >> /home/vscode/.vnc/xstartup && \
     chmod +x /home/vscode/.vnc/xstartup
 
-# Start VNC and noVNC
-RUN echo '#!/bin/bash' > /home/vscode/start-vnc.sh && \
-    echo 'vncserver :1 -geometry 1920x1080 -depth 24 -localhost no' >> /home/vscode/start-vnc.sh && \
-    echo 'websockify --web /usr/share/novnc/ 6080 localhost:5901' >> /home/vscode/start-vnc.sh && \
-    chmod +x /home/vscode/start-vnc.sh
+# Create systemd user service for VNC
+RUN mkdir -p /home/vscode/.config/systemd/user && \
+    echo '[Unit]' > /home/vscode/.config/systemd/user/vncserver@.service && \
+    echo 'Description=Remote desktop service (VNC)' >> /home/vscode/.config/systemd/user/vncserver@.service && \
+    echo 'After=syslog.target network.target' >> /home/vscode/.config/systemd/user/vncserver@.service && \
+    echo '' >> /home/vscode/.config/systemd/user/vncserver@.service && \
+    echo '[Service]' >> /home/vscode/.config/systemd/user/vncserver@.service && \
+    echo 'Type=forking' >> /home/vscode/.config/systemd/user/vncserver@.service && \
+    echo 'ExecStart=/usr/bin/vncserver %i -geometry 1920x1080 -depth 24 -localhost no' >> /home/vscode/.config/systemd/user/vncserver@.service && \
+    echo 'ExecStop=/usr/bin/vncserver -kill %i' >> /home/vscode/.config/systemd/user/vncserver@.service && \
+    echo '' >> /home/vscode/.config/systemd/user/vncserver@.service && \
+    echo '[Install]' >> /home/vscode/.config/systemd/user/vncserver@.service && \
+    echo 'WantedBy=default.target' >> /home/vscode/.config/systemd/user/vncserver@.service
 
 EXPOSE 6080
 USER vscode
