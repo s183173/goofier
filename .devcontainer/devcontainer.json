@@ -1,0 +1,15 @@
+{
+  "name": "Fedora KDE Desktop with Sudo",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "forwardPorts": [6080],
+  "portsAttributes": {
+    "6080": {
+      "label": "noVNC Desktop",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "remoteUser": "vscode",
+  "postCreateCommand": "nohup /home/vscode/start-vnc.sh > /tmp/vnc.log 2>&1 &"
+}
